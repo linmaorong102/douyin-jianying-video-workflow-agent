@@ -1,0 +1,43 @@
+# Local tools and models
+tools/
+models/
+*.bin
+*.gguf
+
+# Credentials and local configuration
+.env
+.env.*
+credentials/
+secrets/
+*.key
+*.pem
+
+# User workflow data
+01_待入库/
+02_素材库/
+03_口播文案/
+04_制作任务/
+05_剪映草稿/
+06_成片/
+
+# Media and drafts
+*.mp4
+*.mov
+*.mkv
+*.avi
+*.mp3
+*.wav
+*.m4a
+*.srt
+*.zip
+
+# n8n local state
+.n8n/
+n8n-data/
+
+# Temporary files
+*.tmp
+*.log
+Thumbs.db
+.DS_Store
+
