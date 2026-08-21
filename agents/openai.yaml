@@ -1,0 +1,5 @@
+interface:
+  display_name: "抖音剪映信息流自动制作"
+  short_description: "自动解析文案、组织素材并按固定参数制作剪映信息流视频"
+  brand_color: "#08C9C4"
+  default_prompt: "Use $douyin-jianying-video-workflow-agent to process the next script and video materials into a verified Jianying draft."
