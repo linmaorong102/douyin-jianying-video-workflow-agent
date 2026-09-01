@@ -1,0 +1,59 @@
+{
+  "name": "00-一键准备下一条-v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a040f2e6-d99d-4bc7-a2ad-c65efb19f35c",
+      "name": "点击执行：准备下一条",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-460, 120]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { execFileSync } = require('child_process');\nconst projectRoot = process.env.VIDEO_WORKFLOW_ROOT || 'D:\\\\抖音信息视频工作流';\nconst scriptPath = `${projectRoot}\\\\scripts\\\\prepare_next_task.js`;\nconst stdout = execFileSync(process.execPath, [scriptPath], { cwd: projectRoot, encoding: 'utf8', windowsHide: true, maxBuffer: 32 * 1024 * 1024, env: { ...process.env, VIDEO_WORKFLOW_ROOT: projectRoot } });\nreturn [{ json: JSON.parse(stdout) }];"
+      },
+      "id": "866f09b7-4e82-4f1f-9589-86e2c3513c65",
+      "name": "同步素材并解析文案",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-140, 120]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const result = $input.first().json;\nreturn [{ json: {\n  result: result.ready_for_next_stage ? '已准备下一条' : '当前没有待处理任务',\n  message: result.message,\n  next_task: result.next_task,\n  queue: result.queue,\n  library_sync: result.library_sync,\n  voiceover_sync: result.voiceover_sync,\n  prepared_at: result.prepared_at\n} }];"
+      },
+      "id": "7a8594f5-92db-4c22-84b4-4ea724c395fd",
+      "name": "显示准备结果",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [180, 120]
+    }
+  ],
+  "connections": {
+    "点击执行：准备下一条": {
+      "main": [[{
+        "node": "同步素材并解析文案",
+        "type": "main",
+        "index": 0
+      }]]
+    },
+    "同步素材并解析文案": {
+      "main": [[{
+        "node": "显示准备结果",
+        "type": "main",
+        "index": 0
+      }]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "tags": []
+}

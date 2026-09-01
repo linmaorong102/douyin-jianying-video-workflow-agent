@@ -1,0 +1,47 @@
+{
+  "name": "01-视频素材自动入库-v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "840912d6-fad8-4b35-84dd-a66ce1d335ab",
+      "name": "手动运行",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-520, 40]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { execFileSync } = require('child_process');\nconst projectRoot = process.env.VIDEO_WORKFLOW_ROOT || 'D:\\\\抖音信息视频工作流';\nconst scriptPath = `${projectRoot}\\\\scripts\\\\sync_video_library.js`;\nconst stdout = execFileSync(process.execPath, [scriptPath], { cwd: projectRoot, encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, VIDEO_WORKFLOW_ROOT: projectRoot } });\nreturn [{ json: { stdout } }];"
+      },
+      "id": "cbe5bbfd-156c-4666-8fea-31f8c23a3640",
+      "name": "扫描并同步视频素材库",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-240, 120]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const stdout = $input.first().json.stdout || '[]';\nconst records = JSON.parse(stdout);\nreturn records.map((record) => ({ json: record }));"
+      },
+      "id": "f6d295e4-5d4a-439d-9329-15ad8a4c714b",
+      "name": "拆分为每条视频记录",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [40, 120]
+    }
+  ],
+  "connections": {
+    "手动运行": {
+      "main": [[{"node": "扫描并同步视频素材库", "type": "main", "index": 0}]]
+    },
+    "扫描并同步视频素材库": {
+      "main": [[{"node": "拆分为每条视频记录", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}

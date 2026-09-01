@@ -1,0 +1,47 @@
+{
+  "name": "02-口播文案解析-v1",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "0b8b2547-d84d-439f-98da-f41940db27ca",
+      "name": "手动运行",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [-520, 40]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const { execFileSync } = require('child_process');\nconst projectRoot = process.env.VIDEO_WORKFLOW_ROOT || 'D:\\\\抖音信息视频工作流';\nconst scriptPath = `${projectRoot}\\\\scripts\\\\sync_voiceover_tasks.js`;\nconst stdout = execFileSync(process.execPath, [scriptPath], { cwd: projectRoot, encoding: 'utf8', windowsHide: true, maxBuffer: 16 * 1024 * 1024, env: { ...process.env, VIDEO_WORKFLOW_ROOT: projectRoot } });\nreturn [{ json: { stdout } }];"
+      },
+      "id": "354611f8-f58b-44d3-971f-b99f9b68525a",
+      "name": "读取文案并生成制作任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [-220, 120]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const stdout = $input.first().json.stdout || '[]';\nconst tasks = JSON.parse(stdout);\nreturn tasks.map((task) => ({ json: task }));"
+      },
+      "id": "fac297c6-f01c-4112-a39d-28e8de20e72e",
+      "name": "拆分为每条制作任务",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [80, 120]
+    }
+  ],
+  "connections": {
+    "手动运行": {
+      "main": [[{"node": "读取文案并生成制作任务", "type": "main", "index": 0}]]
+    },
+    "读取文案并生成制作任务": {
+      "main": [[{"node": "拆分为每条制作任务", "type": "main", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "meta": { "templateCredsSetupCompleted": true },
+  "tags": []
+}
