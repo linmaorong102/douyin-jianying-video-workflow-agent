@@ -29,24 +29,52 @@ if ($fullRoot -eq $driveRoot) {
 $templateFolderName = Join-UnicodeChars @(0x6587, 0x6848, 0x6A21, 0x677F)
 $templateFileName = (Join-UnicodeChars @(0x6279, 0x91CF, 0x89C6, 0x9891, 0x6587, 0x6848, 0x6A21, 0x677F)) + '.txt'
 $skillRoot = Split-Path -Parent $PSScriptRoot
-$sourceScript = Join-Path $PSScriptRoot 'sync_voiceover_tasks.js'
+$sourceVideoScript = Join-Path $PSScriptRoot 'sync_video_library.js'
+$sourceVoiceoverScript = Join-Path $PSScriptRoot 'sync_voiceover_tasks.js'
+$sourcePrepareScript = Join-Path $PSScriptRoot 'prepare_next_task.js'
+$sourceWordExtractor = Join-Path $PSScriptRoot 'extract_word_text.ps1'
 $sourceTemplate = Join-Path $skillRoot 'assets\batch-voiceover-template.txt'
+$sourceWorkflow00 = Join-Path $skillRoot 'workflows\00-一键准备下一条-v1.json'
+$sourceWorkflow01 = Join-Path $skillRoot 'workflows\01-视频素材自动入库-v1.json'
+$sourceWorkflow02 = Join-Path $skillRoot 'workflows\02-口播文案解析-v1.json'
 
-if (-not (Test-Path -LiteralPath $sourceScript -PathType Leaf)) {
-    throw "Missing skill script: $sourceScript"
-}
-if (-not (Test-Path -LiteralPath $sourceTemplate -PathType Leaf)) {
-    throw "Missing batch template: $sourceTemplate"
+$requiredSources = @(
+    $sourceVideoScript,
+    $sourceVoiceoverScript,
+    $sourcePrepareScript,
+    $sourceWordExtractor,
+    $sourceTemplate,
+    $sourceWorkflow00,
+    $sourceWorkflow01,
+    $sourceWorkflow02
+)
+foreach ($requiredSource in $requiredSources) {
+    if (-not (Test-Path -LiteralPath $requiredSource -PathType Leaf)) {
+        throw "Missing skill component: $requiredSource"
+    }
 }
 
 $scriptsFolder = Join-Path $fullRoot 'scripts'
+$workflowsFolder = Join-Path $fullRoot 'workflows'
 $templatesFolder = Join-Path $fullRoot $templateFolderName
-$targetScript = Join-Path $scriptsFolder 'sync_voiceover_tasks.js'
 $targetTemplate = Join-Path $templatesFolder $templateFileName
 $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 
-New-Item -ItemType Directory -Path $scriptsFolder -Force | Out-Null
-New-Item -ItemType Directory -Path $templatesFolder -Force | Out-Null
+$workspaceFolders = @(
+    '01_待入库',
+    '02_素材库',
+    '03_口播文案',
+    '04_制作任务',
+    '05_剪映草稿',
+    '06_成片',
+    'scripts',
+    'workflows',
+    'tools',
+    $templateFolderName
+)
+foreach ($folderName in $workspaceFolders) {
+    New-Item -ItemType Directory -Path (Join-Path $fullRoot $folderName) -Force | Out-Null
+}
 
 function Install-FileSafely {
     param(
@@ -74,8 +102,14 @@ function Install-FileSafely {
 }
 
 $results = @(
-    Install-FileSafely -Source $sourceScript -Target $targetScript
+    Install-FileSafely -Source $sourceVideoScript -Target (Join-Path $scriptsFolder 'sync_video_library.js')
+    Install-FileSafely -Source $sourceVoiceoverScript -Target (Join-Path $scriptsFolder 'sync_voiceover_tasks.js')
+    Install-FileSafely -Source $sourcePrepareScript -Target (Join-Path $scriptsFolder 'prepare_next_task.js')
+    Install-FileSafely -Source $sourceWordExtractor -Target (Join-Path $scriptsFolder 'extract_word_text.ps1')
     Install-FileSafely -Source $sourceTemplate -Target $targetTemplate
+    Install-FileSafely -Source $sourceWorkflow00 -Target (Join-Path $workflowsFolder '00-一键准备下一条-v1.json')
+    Install-FileSafely -Source $sourceWorkflow01 -Target (Join-Path $workflowsFolder '01-视频素材自动入库-v1.json')
+    Install-FileSafely -Source $sourceWorkflow02 -Target (Join-Path $workflowsFolder '02-口播文案解析-v1.json')
 )
 
 $results | Format-Table -AutoSize

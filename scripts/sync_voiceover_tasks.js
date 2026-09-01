@@ -126,6 +126,15 @@ function normalizeNameKey(value) {
   return String(value || '').trim().toLocaleLowerCase('zh-CN');
 }
 
+function hasCurrentTaskSchema(task) {
+  return Boolean(
+    task
+    && Number(task.schema_version) >= 2
+    && task.materials?.primary_video?.file_path
+    && task.content?.exact_segment_join_verified === true,
+  );
+}
+
 function findUniqueVideo(candidates, reason) {
   const uniqueByPath = [...new Map(candidates.map((row) => [normalizePathKey(row.file_path), row])).values()];
   if (uniqueByPath.length === 0) return null;
@@ -345,21 +354,24 @@ function main() {
     const legacyTaskId = `TASK-${sourceDocumentSha256.slice(0, 12).toUpperCase()}`;
     const legacyTaskPath = path.join(tasksFolder, legacyTaskId, 'task.json');
 
-    // 保留旧版单文档任务的幂等性，不迁移或覆盖已经生成的任务。
+    // 当前结构的任务继续保持幂等；旧结构任务保留，但允许生成新的带视频绑定任务。
+    let legacyTask = null;
     if (fs.existsSync(legacyTaskPath)) {
-      const existing = JSON.parse(fs.readFileSync(legacyTaskPath, 'utf8'));
-      results.push({
-        task_id: legacyTaskId,
-        source_file: sourceFile,
-        block_index: existing.source?.block_index || 1,
-        video_file: existing.materials?.primary_video?.file_name || '',
-        title: existing.content.title,
-        segment_count: existing.content.segments.length,
-        status: existing.status,
-        task_path: legacyTaskPath,
-        sync_action: '已存在',
-      });
-      continue;
+      legacyTask = JSON.parse(fs.readFileSync(legacyTaskPath, 'utf8'));
+      if (hasCurrentTaskSchema(legacyTask)) {
+        results.push({
+          task_id: legacyTaskId,
+          source_file: sourceFile,
+          block_index: legacyTask.source?.block_index || 1,
+          video_file: legacyTask.materials.primary_video.file_name || '',
+          title: legacyTask.content.title,
+          segment_count: legacyTask.content.segments.length,
+          status: legacyTask.status,
+          task_path: legacyTaskPath,
+          sync_action: '已存在',
+        });
+        continue;
+      }
     }
 
     let taskBlocks;
@@ -388,7 +400,7 @@ function main() {
         const { title, body, declaredVideo } = parseVoiceoverDocument(block.raw_text);
         const { row: video, matchMethod } = resolveVideoBinding({ declaredVideo, sourceFile, catalog });
         const blockSha256 = sha256Text(`${video.file_name}\u0000${title}\u0000${body}`);
-        taskId = block.ingestion_mode === 'single_document'
+        taskId = block.ingestion_mode === 'single_document' && !legacyTask
           ? legacyTaskId
           : `TASK-${blockSha256.slice(0, 12).toUpperCase()}`;
         taskFolder = path.join(tasksFolder, taskId);
